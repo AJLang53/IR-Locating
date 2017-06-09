@@ -1,9 +1,13 @@
+#/
 from imutils import contours
 from skimage import measure
 import numpy as np
 import argparse
 import imutils
 import cv2
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import time
 
 def getPixelAngles(x,y,w,h,hfov,vfov):
     """
@@ -16,15 +20,14 @@ def getPixelAngles(x,y,w,h,hfov,vfov):
     
     return (az,el)
 
-def findLightSources(image,threshold):
+def findLightSources(frame,threshold):
     """
-    Takes a path to an image file and a threshold, and returns the 
-    pixel coordinates of all light sources (above threshold brightness)
+    Takes a frame and a threshold, and returns the 
+    minimum enclosing circle of all light sources (above threshold brightness)
     """
     
     # load the image, convert it to grayscale, and blur it
-    im = cv2.imread(image)
-    gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (11, 11), 0)   # Blurring eliminates noise
 
     # threshold the image to reveal light regions in the blurred image
@@ -59,11 +62,80 @@ def findLightSources(image,threshold):
     cnts = contours.sort_contours(cnts)[0]
  
     # loop over the contours, finding the center of each source
-    centers = []
+    sources = []
     for (i, c) in enumerate(cnts):
         # Find the centers
         ((cX, cY), radius) = cv2.minEnclosingCircle(c)
-        centers.append((cX,cY))
+        sources.append(((cX, cY), radius))
  
     # return the list of sources
-    return centers
+    return sources
+
+if __name__ == "__main__":
+    
+    # Pic Properties
+    picWidth = 640
+    picHeight = 480
+    framerate = 32
+    
+    # Camera Focal Lengths
+    f_x = 
+    f_y = 
+    
+    # Camera Center Coordinates
+    c_x = 
+    c_y = 
+    
+    # Construct camera matrix
+    camMatrix = np.array([[f_x, 0., c_x],
+                          [0., f_y, c_y],
+                          [0., 0., 1.]])
+    
+    # Distortion Matrix
+    distortMatrix = 5.44787247e-02, 1.23043244e-01, -4.52559581e-04, 5.47011732e-03, -6.83110234e-01
+    
+    # Generate optimal camera matrix
+    newCamMatrix, roi = cv2.getOptimalNewCameraMatrix(camMatrix, distortMatrix, (picWidth, picHeight), 0)
+
+    # Generate LUTs for undistortion
+    CamMapX, CamMapY = cv2.initUndistortRectifyMap(camMatrix, distortMatrix, None, newCamMatrix,
+                                                         (picWidth, picHeight), 5)
+    
+    # initialize the camera and grab a reference to the raw camera capture
+    camera = PiCamera()
+    camera.resolution = (picWidth, picHeight)
+    camera.framerate = framerate
+    rawCapture = PiRGBArray(camera, size=(picWidth, picHeight))
+
+    # allow the camera to warmup
+    time.sleep(0.1)
+
+    # capture frames from the camera
+    for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+        # grab the raw NumPy array representing the image, then initialize the timestamp
+        # and occupied/unoccupied text
+        frame = f.array
+        
+        # Unwarp the image
+        unwarpedFrame = cv2.remap(frame, camMapX, camMapY, cv2.INTER_LINEAR).copy()
+
+        # Find the lightSources in the unwarped image, and draw a circle around them
+        lightSources = findLightSources(upwarpedFrame)
+        
+        for each in lightSources:
+            cX = each[0][0]
+            cY = each[0][1]
+            radius = each[1]
+            cv2.circle(frame, (int(cX), int(cY)), int(radius),
+                (0, 0, 255), 3)
+
+        # show the frame
+        cv2.imshow("Frame", frame)
+        key = cv2.waitKey(1) & 0xFF
+
+        # clear the stream in preparation for the next frame
+        rawCapture.truncate(0)
+
+        # if the `q` key was pressed, break from the loop
+        if key == ord("q"):
+            break
