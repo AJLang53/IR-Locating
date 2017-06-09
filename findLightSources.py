@@ -1,4 +1,4 @@
-#/
+#!/usr/bin/env python 
 from imutils import contours
 from skimage import measure
 import numpy as np
