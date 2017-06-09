@@ -64,9 +64,10 @@ def findLightSources(frame,threshold):
     # loop over the contours, finding the center of each source
     sources = []
     for (i, c) in enumerate(cnts):
-        # Find the centers
+        # Bound the sources
+        (x, y, w, h) = cv2.boundingRect(c)
         ((cX, cY), radius) = cv2.minEnclosingCircle(c)
-        sources.append(((cX, cY), radius))
+        sources.append([(cX, cY), radius,(x,y,w,h)])
  
     # return the list of sources
     return sources
@@ -85,6 +86,10 @@ if __name__ == "__main__":
     # Camera Center Coordinates
     c_x = 
     c_y = 
+    
+    # Camera FOV
+    hfov = 62.2
+    vfov = 48.8
     
     # Construct camera matrix
     camMatrix = np.array([[f_x, 0., c_x],
@@ -119,16 +124,25 @@ if __name__ == "__main__":
         # Unwarp the image
         unwarpedFrame = cv2.remap(frame, camMapX, camMapY, cv2.INTER_LINEAR).copy()
 
-        # Find the lightSources in the unwarped image, and draw a circle around them
+        # Find the lightSources in the unwarped image, and label them
         lightSources = findLightSources(unwarpedFrame)
-        
+        lightLoc = []
+        angles = []
         for each in lightSources:
             cX = each[0][0]
             cY = each[0][1]
+            x = each[2][0]
+            y = each[2][1]
+            lightLoc.append((cX,cY))
+            # Get azimuth and elevation
+            angles.append(getPixelAngles(cX,cY,picWidth,picHeight,hfov,vfov))
             radius = each[1]
+            # Encircle each light source
             cv2.circle(unwarpedFrame, (int(cX), int(cY)), int(radius),
                 (0, 0, 255), 3)
-
+            # Add the azimuth and elevation angles near the circle
+            cv2.putText(unwarpedFrame, '('+str(angles[i][0])+','+str(angles[i][1])+')', (x, y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+        
         # show the frame
         cv2.imshow("Unwarped Frame", unwarpedFrame)
         key = cv2.waitKey(1) & 0xFF
