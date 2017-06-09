@@ -5,6 +5,17 @@ import argparse
 import imutils
 import cv2
 
+def getPixelAngles(x,y,w,h,hfov,vfov):
+    """
+    Takes a pixel location, image size, and fields of view to locate 
+    relative azimuth and elevation from camera plane to pixel
+    """
+    
+    az = x/w * hfov
+    el = y/h * vfov
+    
+    return (az,el)
+
 def findLightSources(image,threshold):
     """
     Takes a path to an image file and a threshold, and returns the 
