@@ -120,17 +120,17 @@ if __name__ == "__main__":
         unwarpedFrame = cv2.remap(frame, camMapX, camMapY, cv2.INTER_LINEAR).copy()
 
         # Find the lightSources in the unwarped image, and draw a circle around them
-        lightSources = findLightSources(upwarpedFrame)
+        lightSources = findLightSources(unwarpedFrame)
         
         for each in lightSources:
             cX = each[0][0]
             cY = each[0][1]
             radius = each[1]
-            cv2.circle(frame, (int(cX), int(cY)), int(radius),
+            cv2.circle(unwarpedFrame, (int(cX), int(cY)), int(radius),
                 (0, 0, 255), 3)
 
         # show the frame
-        cv2.imshow("Frame", frame)
+        cv2.imshow("Unwarped Frame", unwarpedFrame)
         key = cv2.waitKey(1) & 0xFF
 
         # clear the stream in preparation for the next frame
