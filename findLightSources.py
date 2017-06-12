@@ -8,6 +8,17 @@ import cv2
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
+from Adafruit_Python_BNO055 import BNO055
+
+def absAngles(relAz,relEl):
+    """
+    Takes in camera relative rotations, and returns absolute rotations
+    using the IMU
+    """
+    
+    heading, roll, pitch = BNO055.read_euler()
+    x, y, z, w = BNO055.read_quaternion()
+    
 
 def getPixelAngles(x,y,w,h,hfov,vfov):
     """
