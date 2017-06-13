@@ -17,8 +17,10 @@ def absAngles(relAz,relEl):
     """
     
     heading, roll, pitch = BNO055.read_euler()
-    x, y, z, w = BNO055.read_quaternion()
+    camAz = relAz*cos(roll) - relEl*sin(roll)
+    camEle = relAz*sin(roll) - relEl*cos(roll)
     
+    return (heading + camAz, pitch + camEle)
 
 def getPixelAngles(x,y,w,h,hfov,vfov):
     """
