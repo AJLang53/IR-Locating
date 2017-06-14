@@ -17,6 +17,9 @@ def absAngles(relAz,relEl):
     """
     
     heading, roll, pitch = BNO055.read_euler()
+    
+    # Use the roll to transform the relative azimuth and elevation in
+    # the image into absolute azimuth and elevation (no roll)
     camAz = relAz*cos(roll) - relEl*sin(roll)
     camEle = relAz*sin(roll) - relEl*cos(roll)
     
@@ -44,7 +47,7 @@ def findLightSources(frame,threshold):
     blurred = cv2.GaussianBlur(gray, (11, 11), 0)   # Blurring eliminates noise
 
     # threshold the image to reveal light regions in the blurred image
-    thresh = cv2.threshold(blurred, 200, 255, cv2.THRESH_BINARY)[1]
+    thresh = cv2.threshold(blurred, threshold, 255, cv2.THRESH_BINARY)[1]
 
     # perform a series of erosions and dilations to remove any small blobs of noise from the thresholded image
     thresh = cv2.erode(thresh, None, iterations=2)
@@ -66,7 +69,7 @@ def findLightSources(frame,threshold):
         numPixels = cv2.countNonZero(labelMask)
 
         # if the number of pixels in the component is sufficiently large, then add it to our mask of "large blobs"
-        if numPixels > 300:
+        if numPixels > 300:     # 300 pixels for large blob (arbitary, needs experimentation)
             mask = cv2.add(mask, labelMask)
     
     # find the contours in the mask, then sort them from left to right
@@ -138,7 +141,7 @@ if __name__ == "__main__":
         unwarpedFrame = cv2.remap(frame, camMapX, camMapY, cv2.INTER_LINEAR).copy()
 
         # Find the lightSources in the unwarped image, and label them
-        lightSources = findLightSources(unwarpedFrame)
+        lightSources = findLightSources(unwarpedFrame, 200)     # Threshold of 200 (arbitrary, needs experimentation)
         lightLoc = []
         angles = []
         for each in lightSources:
