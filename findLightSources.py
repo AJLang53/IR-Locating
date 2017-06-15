@@ -157,7 +157,7 @@ if __name__ == "__main__":
             cv2.circle(unwarpedFrame, (int(cX), int(cY)), int(radius),
                 (0, 0, 255), 3)
             # Add the azimuth and elevation angles near the circle
-            cv2.putText(unwarpedFrame, '('+str(angles[i][0])+','+str(angles[i][1])+')', (x, y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+            cv2.putText(unwarpedFrame, '('+str(angles[-1][0])+','+str(angles[-1][1])+')', (x, y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
         
         # show the frame
         cv2.imshow("Unwarped Frame", unwarpedFrame)
