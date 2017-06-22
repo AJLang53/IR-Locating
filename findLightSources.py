@@ -8,7 +8,7 @@ import cv2
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
-from Adafruit_Python_BNO055 import BNO055
+##from Adafruit_Python_BNO055 import BNO055
 
 def absAngles(relAz,relEl):
     """
@@ -56,12 +56,13 @@ def findLightSources(frame,threshold):
     # perform a connected component analysis on the thresholded image, then initialize a mask to store only the "large" components
     labels = measure.label(thresh, neighbors=8, background=0)
     mask = np.zeros(thresh.shape, dtype="uint8")
- 
+
+    sources = []
     # loop over the unique components
     for label in np.unique(labels):
         # if this is the background label, ignore it
-        if label == 0:
-            continue
+##        if label == 0:
+##            continue
 
         # otherwise, construct the label mask and count the number of pixels 
         labelMask = np.zeros(thresh.shape, dtype="uint8")
@@ -69,21 +70,20 @@ def findLightSources(frame,threshold):
         numPixels = cv2.countNonZero(labelMask)
 
         # if the number of pixels in the component is sufficiently large, then add it to our mask of "large blobs"
-        if numPixels > 300:     # 300 pixels for large blob (arbitary, needs experimentation)
+        if numPixels < 250000:     # 300 pixels for large blob (arbitary, needs experimentation)
             mask = cv2.add(mask, labelMask)
     
-    # find the contours in the mask, then sort them from left to right
-    cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cnts = cnts[0] if imutils.is_cv2() else cnts[1]
-    cnts = contours.sort_contours(cnts)[0]
- 
-    # loop over the contours, finding the center of each source
-    sources = []
-    for (i, c) in enumerate(cnts):
-        # Bound the sources
-        (x, y, w, h) = cv2.boundingRect(c)
-        ((cX, cY), radius) = cv2.minEnclosingCircle(c)
-        sources.append([(cX, cY), radius,(x,y,w,h)])
+            # find the contours in the mask, then sort them from left to right
+            cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cnts = cnts[0] if imutils.is_cv2() else cnts[1]
+            cnts = contours.sort_contours(cnts)[0]
+         
+            # loop over the contours, finding the center of each source
+            for (i, c) in enumerate(cnts):
+                # Bound the sources
+                (x, y, w, h) = cv2.boundingRect(c)
+                ((cX, cY), radius) = cv2.minEnclosingCircle(c)
+                sources.append([(cX, cY), radius,(x,y,w,h)])
  
     # return the list of sources
     return sources
@@ -94,38 +94,16 @@ if __name__ == "__main__":
     picWidth = 640
     picHeight = 480
     framerate = 32
-    
-    # Camera Focal Lengths
-    f_x = 
-    f_y = 
-    
-    # Camera Center Coordinates
-    c_x = 
-    c_y = 
-    
+
     # Camera FOV
     hfov = 62.2
     vfov = 48.8
-    
-    # Construct camera matrix
-    camMatrix = np.array([[f_x, 0., c_x],
-                          [0., f_y, c_y],
-                          [0., 0., 1.]])
-    
-    # Distortion Matrix
-    distortMatrix = 5.44787247e-02, 1.23043244e-01, -4.52559581e-04, 5.47011732e-03, -6.83110234e-01
-    
-    # Generate optimal camera matrix
-    newCamMatrix, roi = cv2.getOptimalNewCameraMatrix(camMatrix, distortMatrix, (picWidth, picHeight), 0)
-
-    # Generate LUTs for undistortion
-    CamMapX, CamMapY = cv2.initUndistortRectifyMap(camMatrix, distortMatrix, None, newCamMatrix,
-                                                         (picWidth, picHeight), 5)
     
     # initialize the camera and grab a reference to the raw camera capture
     camera = PiCamera()
     camera.resolution = (picWidth, picHeight)
     camera.framerate = framerate
+    camera.vflip = True
     rawCapture = PiRGBArray(camera, size=(picWidth, picHeight))
 
     # allow the camera to warmup
@@ -137,11 +115,8 @@ if __name__ == "__main__":
         # and occupied/unoccupied text
         frame = f.array
         
-        # Unwarp the image
-        unwarpedFrame = cv2.remap(frame, camMapX, camMapY, cv2.INTER_LINEAR).copy()
-
         # Find the lightSources in the unwarped image, and label them
-        lightSources = findLightSources(unwarpedFrame, 200)     # Threshold of 200 (arbitrary, needs experimentation)
+        lightSources = findLightSources(frame, 200)     # Threshold of 200 (arbitrary, needs experimentation)
         lightLoc = []
         angles = []
         for each in lightSources:
@@ -154,13 +129,13 @@ if __name__ == "__main__":
             angles.append(getPixelAngles(cX,cY,picWidth,picHeight,hfov,vfov))
             radius = each[1]
             # Encircle each light source
-            cv2.circle(unwarpedFrame, (int(cX), int(cY)), int(radius),
+            cv2.circle(frame, (int(cX), int(cY)), int(radius),
                 (0, 0, 255), 3)
             # Add the azimuth and elevation angles near the circle
-            cv2.putText(unwarpedFrame, '('+str(angles[-1][0])+','+str(angles[-1][1])+')', (x, y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+            cv2.putText(frame, '('+str(angles[-1][0])+','+str(angles[-1][1])+')', (x, y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
         
         # show the frame
-        cv2.imshow("Unwarped Frame", unwarpedFrame)
+        cv2.imshow("Frame", frame)
         key = cv2.waitKey(1) & 0xFF
 
         # clear the stream in preparation for the next frame
