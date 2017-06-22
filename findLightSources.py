@@ -8,7 +8,7 @@ import cv2
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
-##from Adafruit_Python_BNO055 import BNO055
+from Adafruit_BNO055 import BNO055
 
 def absAngles(relAz,relEl):
     """
@@ -31,8 +31,8 @@ def getPixelAngles(x,y,w,h,hfov,vfov):
     relative azimuth and elevation from camera plane to pixel
     """
     
-    az = x/w * hfov
-    el = y/h * vfov
+    az = (w/2-x)/w * hfov
+    el = (h/2-y)/h * vfov
     
     return (az,el)
 
