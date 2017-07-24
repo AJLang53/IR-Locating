@@ -12,6 +12,9 @@ import math
 import threading
 
 class getOrientation:
+    """
+    Class to handle the IMU thread
+    """
 
     def __init__(self, sensor):
         self.sensor = sensor
@@ -22,6 +25,8 @@ class getOrientation:
         self.prevRoll = 0.0
         self.prevYaw = 0.0
         self.end = False
+        
+        # Create a thread for the function related to the IMU
         if self.sensor == 'hat':
             thread = threading.Thread(target=self.runHat,args=())
         elif self.sensor == 'BNO':
@@ -32,7 +37,10 @@ class getOrientation:
 
 
     def runBNO(self):
-        bno = BNO055.BNO055(rst=18) 
+        """
+        Uses a BNO055 connected through I2C with rst on pin 18
+        """
+        bno = BNO055.BNO055(rst=18) # Connect the BNO055 rst to pin 18
         if not bno.begin():
             raise RuntimeError("Failed to initialize BNO055")
         
@@ -86,6 +94,9 @@ class getOrientation:
                 
         
     def runHat(self):
+        """
+        Uses the Raspberry Pi Sense Hat
+        """
         
         senseHat = SenseHat()
         samples = 5
@@ -122,6 +133,9 @@ class getOrientation:
             self.prevYaw = self.yaw
 
     def lowPass(self,x, y_old, rc, dt):
+        """
+        Temporal low pass filter to high frequency changes
+        """
         alpha = float(dt)/(rc+ dt)
         return alpha*x + (1- alpha)*(y_old)
 
@@ -207,7 +221,7 @@ def findLightSources(frame,threshold):
 if __name__ == "__main__":
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--imu",required=False, help="hat or bno")
+    ap.add_argument("--imu",required=False, help="hat or bno")  # Check if an IMU is being used
     args = vars(ap.parse_args())
 
     useHat = False
